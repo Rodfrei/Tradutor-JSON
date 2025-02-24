@@ -4,7 +4,7 @@
 
 O **Tradutor JSON** é um software com interface gráfica que permite a tradução e gerenciamento de textos, organizando-os em arquivos JSON. Ele facilita a tradução de textos inseridos pelo usuário em diferentes idiomas.
 
-A API utilizada para realizar a tradução é a **[MyMemory Translated](https://mymemory.translated.net/)**. Caso o uso da API esteja desativado, traduções locais são criadas adicionando sufixos aos textos.
+A API utilizada para realizar a tradução é a **[MyMemory Translated](https://mymemory.translated.net/)**. Caso o uso da API esteja desativado, os textos são inseridos com sufixos EN e ES nos respectivos arquivos JSON.
 
 ---
 
