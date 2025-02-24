@@ -4,7 +4,6 @@ import requests
 
 CATEGORIAS_VALIDAS = {"utils", "tooltip", "titulo", "menu", "mensagem", "label", "backend"}
 
-
 def carregar_json(caminho):
     if os.path.exists(caminho):
         with open(caminho, "r", encoding="utf-8") as f:
@@ -13,11 +12,9 @@ def carregar_json(caminho):
         salvar_json(caminho, {})
         return {}
 
-
 def salvar_json(caminho, dados):
     with open(caminho, "w", encoding="utf-8") as f:
         json.dump(dados, f, indent=2, ensure_ascii=False, sort_keys=True)
-
 
 def traduzir_texto(texto, destino):
     url = "https://api.mymemory.translated.net/get"
@@ -27,10 +24,9 @@ def traduzir_texto(texto, destino):
         if "responseData" in response and response["responseData"]["translatedText"]:
             return response["responseData"]["translatedText"]
         else:
-            raise ValueError("Resposta inválida da API de tradução")
+            return None
     except Exception:
         return None
-
 
 def verificar_existencia(dados_json, niveis):
     ref = dados_json
@@ -40,8 +36,7 @@ def verificar_existencia(dados_json, niveis):
         ref = ref[nivel]
     return niveis[-1] in ref
 
-
-def inserir_traducao(textos, pasta_assets):
+def inserir_traducao(textos, pasta_assets, usar_api):
     caminho_pt = os.path.join(pasta_assets, "pt.json")
     caminho_en = os.path.join(pasta_assets, "en.json")
     caminho_es = os.path.join(pasta_assets, "es.json")
@@ -79,11 +74,15 @@ def inserir_traducao(textos, pasta_assets):
                 ref = ref[nivel]
             ref[niveis[-1]] = valor
 
-        traduzido_en = traduzir_texto(valor, "en")
-        traduzido_es = traduzir_texto(valor, "es")
+        if usar_api:
+            traduzido_en = traduzir_texto(valor, "en")
+            traduzido_es = traduzir_texto(valor, "es")
 
-        if traduzido_en is None or traduzido_es is None:
-            return "==> Erro na API de tradução. Nenhuma tradução foi inserida."
+            if traduzido_en is None or traduzido_es is None:
+                return "==> Erro na API de tradução. Nenhuma tradução foi inserida."
+        else:
+            traduzido_en = valor + " EN"
+            traduzido_es = valor + " ES"
 
         inserir_no_json(pt_json, niveis, valor)
         inserir_no_json(en_json, niveis, traduzido_en)
