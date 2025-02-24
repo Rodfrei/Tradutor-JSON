@@ -15,7 +15,7 @@ A API utilizada para realizar a tradução é a **[MyMemory Translated](https://
 - Cada linha no campo entrada é considerado um item a ser inserido.
 - **Configurações**:
   - **Uso da API**: Caixa de seleção para ativar ou desativar a tradução via API.
-  - **Escrita no TXT**: Opção para salvar o histórico de labels inseridas `.txt`.
+  - **Escrita no TXT**: Opção para salvar o histórico de labels inseridas.
 - **Botões**:
   - **Processar Traduções**: Executa as traduções com base nos textos inseridos e configurações selecionadas.
 - **Área de Resultados**: Exibe os resultados das traduções ou mensagens de erro diretamente na interface.
