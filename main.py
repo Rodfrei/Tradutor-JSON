@@ -1,21 +1,25 @@
-from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QLabel, QPushButton, QTextEdit, QFileDialog, QLineEdit, QCheckBox
+from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QLabel, QPushButton, QTextEdit, QFileDialog, QLineEdit, \
+    QCheckBox, QHBoxLayout
 from PyQt6.QtGui import QFont, QIcon
 from PyQt6.QtCore import QThread, pyqtSignal
 import os
 from tradutor import inserir_traducao
 
+
 class TraducaoThread(QThread):
     resultado_signal = pyqtSignal(str)
 
-    def __init__(self, entradas, pasta_assets, usar_api):
+    def __init__(self, entradas, pasta_assets, usar_api, escrever_txt):
         super().__init__()
         self.entradas = entradas
         self.pasta_assets = pasta_assets
         self.usar_api = usar_api
+        self.escrever_txt = escrever_txt
 
     def run(self):
-        resultado = inserir_traducao(self.entradas, self.pasta_assets, self.usar_api)
+        resultado = inserir_traducao(self.entradas, self.pasta_assets, self.usar_api, self.escrever_txt)
         self.resultado_signal.emit(resultado)
+
 
 class TradutorApp(QWidget):
     def __init__(self):
@@ -49,9 +53,18 @@ class TradutorApp(QWidget):
         self.texto_entrada.setFont(fonte)
         self.layout.addWidget(self.texto_entrada)
 
+        self.checkbox_layout = QHBoxLayout()
+
         self.checkbox_api = QCheckBox("Utilizar API de tradução")
         self.checkbox_api.setFont(fonte)
-        self.layout.addWidget(self.checkbox_api)
+        self.checkbox_layout.addWidget(self.checkbox_api)
+
+        self.checkbox_txt = QCheckBox("Escrever chaves em .txt")
+        self.checkbox_txt.setFont(fonte)
+        self.checkbox_txt.setChecked(True)
+        self.checkbox_layout.addWidget(self.checkbox_txt)
+
+        self.layout.addLayout(self.checkbox_layout)
 
         self.btn_processar = QPushButton("Processar Traduções")
         self.btn_processar.setFont(fonte)
@@ -82,14 +95,16 @@ class TradutorApp(QWidget):
 
         entradas = self.texto_entrada.toPlainText().strip().split("\n")
         usar_api = self.checkbox_api.isChecked()
+        escrever_txt = self.checkbox_txt.isChecked()
         self.resultado_saida.setText("==> Traduzindo...")
 
-        self.thread_traducao = TraducaoThread(entradas, pasta_assets, usar_api)
+        self.thread_traducao = TraducaoThread(entradas, pasta_assets, usar_api, escrever_txt)
         self.thread_traducao.resultado_signal.connect(self.mostrar_resultado)
         self.thread_traducao.start()
 
     def mostrar_resultado(self, resultado):
         self.resultado_saida.setText(resultado)
+
 
 if __name__ == "__main__":
     app = QApplication([])
