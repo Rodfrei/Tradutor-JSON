@@ -11,12 +11,11 @@ A API utilizada para realizar a tradução é a **[MyMemory Translated](https://
 ## Interface Gráfica
 
 - **Seleção de Pasta**: Permite ao usuário escolher a pasta que contém ou armazenará os arquivos de tradução.
-- **Campo de Entrada de Textos**: Espaço onde o usuário insere os dados no formato `chave:valor`.
+- **Campo de Entrada de Textos**: Espaço onde o usuário insere os dados no formato `chave.subchave: valor`.
 - **Configurações**:
   - **Uso da API**: Caixa de seleção para ativar ou desativar a tradução via API.
-  - **Escrita no TXT**: Opção para salvar os textos originais em um arquivo `.txt`.
+  - **Escrita no TXT**: Opção para salvar o histórico de labels inseridas `.txt`.
 - **Botões**:
-  - **Selecionar Pasta**: Abre a caixa de diálogo para escolher o diretório de saída.
   - **Processar Traduções**: Executa as traduções com base nos textos inseridos e configurações selecionadas.
 - **Área de Resultados**: Exibe os resultados das traduções ou mensagens de erro diretamente na interface.
 
