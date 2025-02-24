@@ -22,7 +22,3 @@ A API utilizada para realizar a tradução é a **[MyMemory Translated](https://
 
 ---
 
-## API de Tradução
-
-A aplicação utiliza a API **[MyMemory Translated](https://mymemory.translated.net/)** para traduzir textos do português para outros idiomas, como inglês e espanhol. A tradução é inserida de forma organizada em arquivos `.json`, podendo também ser escrita em um arquivo `.txt` caso configurado.
-
