@@ -24,63 +24,72 @@ class TraducaoThread(QThread):
 class TradutorApp(QWidget):
     def __init__(self):
         super().__init__()
+        self.inicializar_janela()
+        self.layout = QVBoxLayout()
+        self.adicionar_widgets()
+        self.setLayout(self.layout)
+
+    def inicializar_janela(self):
         self.setWindowTitle("Tradutor JSON")
         self.setGeometry(100, 100, 700, 500)
         icon_path = os.path.join(os.path.dirname(__file__), "rocket.ico")
         self.setWindowIcon(QIcon(icon_path))
+        self.fonte = QFont("Arial", 14)
 
-        self.layout = QVBoxLayout()
-        fonte = QFont("Arial", 14)
-
-        self.label_pasta = QLabel("Pasta dos arquivos JSON:")
-        self.label_pasta.setFont(fonte)
-        self.layout.addWidget(self.label_pasta)
-
+    def adicionar_widgets(self):
         self.entrada_pasta = QLineEdit()
-        self.entrada_pasta.setFont(fonte)
-        self.layout.addWidget(self.entrada_pasta)
-
-        self.btn_selecionar = QPushButton("Selecionar")
-        self.btn_selecionar.setFont(fonte)
-        self.btn_selecionar.clicked.connect(self.selecionar_pasta)
-        self.layout.addWidget(self.btn_selecionar)
-
-        self.label_entrada = QLabel("Insira os textos (Formato: chave.subchave: valor)")
-        self.label_entrada.setFont(fonte)
-        self.layout.addWidget(self.label_entrada)
-
-        self.texto_entrada = QTextEdit()
-        self.texto_entrada.setFont(fonte)
-        self.layout.addWidget(self.texto_entrada)
-
-        self.checkbox_layout = QHBoxLayout()
-
-        self.checkbox_api = QCheckBox("Utilizar API de tradução")
-        self.checkbox_api.setFont(fonte)
-        self.checkbox_layout.addWidget(self.checkbox_api)
-
-        self.checkbox_txt = QCheckBox("Escrever chaves em .txt")
-        self.checkbox_txt.setFont(fonte)
-        self.checkbox_txt.setChecked(True)
-        self.checkbox_layout.addWidget(self.checkbox_txt)
-
-        self.layout.addLayout(self.checkbox_layout)
-
-        self.btn_processar = QPushButton("Processar Traduções")
-        self.btn_processar.setFont(fonte)
-        self.btn_processar.clicked.connect(self.processar_traducoes)
-        self.layout.addWidget(self.btn_processar)
-
-        self.label_resultado = QLabel("Resultados:")
-        self.label_resultado.setFont(fonte)
-        self.layout.addWidget(self.label_resultado)
-
-        self.resultado_saida = QTextEdit()
-        self.resultado_saida.setFont(fonte)
+        self.entrada_pasta.setFont(self.fonte)
+        self.texto_entrada = self.criar_text_area(False)
+        self.resultado_saida = self.criar_text_area(True)
         self.resultado_saida.setReadOnly(True)
-        self.layout.addWidget(self.resultado_saida)
 
-        self.setLayout(self.layout)
+        self.btn_selecionar = self.criar_botao("Selecionar", self.selecionar_pasta)
+        self.btn_processar = self.criar_botao("Processar", self.processar_traducoes)
+
+        self.checkbox_api = self.criar_checkbox(False, "Utilizar API de tradução")
+        self.checkbox_txt = self.criar_checkbox(True, "Escrever chaves em .txt")
+
+        widgets = [
+            self.criar_label("Pasta dos arquivos JSON:"), self.entrada_pasta, self.btn_selecionar,
+            self.criar_label("Insira os textos (Formato: chave.subchave: valor)"), self.texto_entrada,
+            self.criar_layout_checkboxes(), self.btn_processar,
+            self.criar_label("Resultado:"), self.resultado_saida
+        ]
+
+        for widget in widgets:
+            if isinstance(widget, QHBoxLayout):
+                self.layout.addLayout(widget)
+            else:
+                self.layout.addWidget(widget)
+
+    def criar_text_area(self, is_read_only):
+        text_area = QTextEdit()
+        text_area.setFont(self.fonte)
+        text_area.setReadOnly(is_read_only)
+        return text_area
+
+    def criar_label(self, texto):
+        label = QLabel(texto)
+        label.setFont(self.fonte)
+        return label
+
+    def criar_botao(self, texto, funcao):
+        botao = QPushButton(texto)
+        botao.setFont(self.fonte)
+        botao.clicked.connect(funcao)
+        return botao
+
+    def criar_checkbox(self, estado, texto):
+        checkbox = QCheckBox(texto)
+        checkbox.setFont(self.fonte)
+        checkbox.setChecked(estado)
+        return checkbox
+
+    def criar_layout_checkboxes(self):
+        layout = QHBoxLayout()
+        layout.addWidget(self.checkbox_api)
+        layout.addWidget(self.checkbox_txt)
+        return layout
 
     def selecionar_pasta(self):
         pasta_selecionada = QFileDialog.getExistingDirectory(self, "Selecionar Pasta")
