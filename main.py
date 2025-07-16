@@ -1,5 +1,5 @@
 from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QLabel, QPushButton, QTextEdit, QFileDialog, QLineEdit, \
-    QCheckBox, QHBoxLayout, QListWidget, QTabWidget, QInputDialog, QComboBox
+    QCheckBox, QHBoxLayout, QListWidget, QTabWidget, QInputDialog, QComboBox, QSizePolicy
 from PyQt6.QtGui import QFont, QIcon
 from PyQt6.QtCore import QThread, pyqtSignal
 import os
@@ -34,15 +34,17 @@ def aplicar_tema_escuro(app):
 class TraducaoThread(QThread):
     resultado_signal = pyqtSignal(str)
 
-    def __init__(self, entradas, pasta_assets, usar_api, escrever_txt):
+    def __init__(self, entradas, pasta_assets, usar_api, escrever_txt, atualizar_existente):
         super().__init__()
         self.entradas = entradas
         self.pasta_assets = pasta_assets
         self.usar_api = usar_api
         self.escrever_txt = escrever_txt
+        self.atualizar_existente = atualizar_existente
 
     def run(self):
-        resultado = inserir_traducao(self.entradas, self.pasta_assets, self.usar_api, self.escrever_txt)
+        resultado = inserir_traducao(self.entradas, self.pasta_assets, self.usar_api, self.escrever_txt,
+                                     self.atualizar_existente, categorias_validas=None)
         self.resultado_signal.emit(resultado)
 
 
@@ -92,14 +94,13 @@ class TradutorApp(QWidget):
         layout_botoes.addWidget(self.btn_ordenar)
 
 
-        self.checkbox_api = self.criar_checkbox(False, "Utilizar API de tradução")
-        self.checkbox_txt = self.criar_checkbox(True, "Escrever chaves em .txt")
+        self.checkbox_api = self.criar_checkbox(False, "Utilizar API")
+        self.checkbox_atualizar = self.criar_checkbox(False, "Atualizar existentes")
+        self.checkbox_txt = self.criar_checkbox(True, "Escrever em .txt")
 
         widgets = [
-            self.criar_label("Pasta dos arquivos JSON:"), self.combo_pastas,
-            self.criar_label("Insira os textos (Formato: chave.subchave: valor)"), self.texto_entrada,
-            self.criar_layout_checkboxes(), layout_botoes,
-            self.criar_label("Resultado:"), self.resultado_saida
+            self.combo_pastas, self.texto_entrada,
+            self.criar_layout_checkboxes(), layout_botoes, self.resultado_saida
         ]
 
         for widget in widgets:
@@ -115,25 +116,34 @@ class TradutorApp(QWidget):
         layout_config = QVBoxLayout()
         aba_config.setLayout(layout_config)
 
+        self.input_categorias = QLineEdit()
+        self.input_categorias.setFont(self.fonte)
+
         self.lista_widget = QListWidget()
         self.lista_widget.setFont(self.fonte)
         self.lista_widget.setFixedHeight(130)
 
         self.carregar_caminhos_salvos()
 
-        btn_adicionar = self.criar_botao("Adicionar", self.adicionar_pasta_config)
-        btn_remover = self.criar_botao("Remover", self.remover_caminho)
-        btn_guardar = self.criar_botao("Guardar", self.guardar_caminhos)
-
-        label_config = QLabel("Pastas com arquivos JSON:")
+        label_config = QLabel("Pastas com arquivos pt.json, en.json, es.json:")
         label_config.setFont(self.fonte)
         layout_config.addWidget(label_config)
         layout_config.addWidget(self.lista_widget)
+
+        btn_adicionar = self.criar_botao("Adicionar", self.adicionar_pasta_config)
+        btn_remover = self.criar_botao("Remover", self.remover_caminho)
+        btn_guardar = self.criar_botao("Guardar", self.guardar_config)
+
         botoes_layout = QHBoxLayout()
         botoes_layout.addWidget(btn_adicionar)
-        botoes_layout.addWidget(btn_guardar)
         botoes_layout.addWidget(btn_remover)
         layout_config.addLayout(botoes_layout)
+
+        layout_config.addWidget(self.criar_label("Chaves válidas:"))
+        layout_config.addWidget(self.input_categorias)
+
+        layout_config.addSpacing(10)
+        layout_config.addWidget(btn_guardar)
 
         layout_config.addStretch()
 
@@ -144,6 +154,12 @@ class TradutorApp(QWidget):
         text_area.setFont(self.fonte)
         text_area.setReadOnly(is_read_only)
         text_area.setAcceptRichText(False)
+        if is_read_only:
+            text_area.setFixedHeight(40)
+            text_area.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        else:
+            text_area.setPlaceholderText("chave.subchave: valor")
+
         return text_area
 
     def criar_label(self, texto):
@@ -166,6 +182,7 @@ class TradutorApp(QWidget):
     def criar_layout_checkboxes(self):
         layout = QHBoxLayout()
         layout.addWidget(self.checkbox_api)
+        layout.addWidget(self.checkbox_atualizar)
         layout.addWidget(self.checkbox_txt)
         return layout
 
@@ -180,12 +197,13 @@ class TradutorApp(QWidget):
             self.resultado_saida.setText("Erro: Por favor, selecione a pasta dos arquivos JSON.")
             return
 
-        entradas = self.texto_entrada.toPlainText().strip().split("\n")
         usar_api = self.checkbox_api.isChecked()
         escrever_txt = self.checkbox_txt.isChecked()
+        atualizar_existente = self.checkbox_atualizar.isChecked()
         self.resultado_saida.setText("==> Traduzindo...")
 
-        self.thread_traducao = TraducaoThread(entradas, pasta_assets, usar_api, escrever_txt)
+        entradas = self.texto_entrada.toPlainText().strip().split("\n")
+        self.thread_traducao = TraducaoThread(entradas, pasta_assets, usar_api, escrever_txt, atualizar_existente)
         self.thread_traducao.resultado_signal.connect(self.mostrar_resultado)
         self.thread_traducao.start()
 
@@ -217,7 +235,7 @@ class TradutorApp(QWidget):
     def mostrar_resultado(self, resultado):
         self.resultado_saida.setText(resultado)
 
-    def atualizar_combo_pastas(self):
+    def atualizar_config(self):
         self.combo_pastas.clear()
         for item in self.lista_caminhos:
             display_text = item['nome']
@@ -238,20 +256,40 @@ class TradutorApp(QWidget):
         if row >= 0:
             self.lista_caminhos.pop(row)
             self.lista_widget.takeItem(row)
-        self.atualizar_combo_pastas()
+        self.atualizar_config()
 
-    def guardar_caminhos(self):
+    def guardar_config(self):
+        categorias_texto = self.input_categorias.text().strip()
+        categorias_lista = [cat.strip() for cat in categorias_texto.split(",") if cat.strip()]
+
+        dados = {
+            "pastas": self.lista_caminhos,
+            "categorias_validas": categorias_lista
+        }
+
         with open(self.caminho_config, "w", encoding="utf-8") as f:
-            json.dump(self.lista_caminhos, f, indent=2, ensure_ascii=False)
-        self.atualizar_combo_pastas()
+            json.dump(dados, f, indent=2, ensure_ascii=False)
+
+        self.atualizar_config()
 
     def carregar_caminhos_salvos(self):
         if os.path.exists(self.caminho_config):
             with open(self.caminho_config, "r", encoding="utf-8") as f:
-                self.lista_caminhos = json.load(f)
-                for item in self.lista_caminhos:
-                    self.lista_widget.addItem(f"{item['nome']}  →  {item['caminho']}")
-        self.atualizar_combo_pastas()
+                try:
+                    dados = json.load(f)
+                    self.lista_caminhos = dados.get("pastas", [])
+                    categorias = dados.get("categorias_validas", [])
+                    self.input_categorias.setText(", ".join(categorias))
+                    for item in self.lista_caminhos:
+                        self.lista_widget.addItem(f"{item['nome']}  →  {item['caminho']}")
+                except Exception:
+                    # Se erro ao ler, assume vazio
+                    self.lista_caminhos = []
+                    self.input_categorias.setText("")
+        else:
+            self.lista_caminhos = []
+            self.input_categorias.setText("utils, tooltip, titulo, menu, mensagem, label, backend")
+        self.atualizar_config()
     ##########################################################
 
 

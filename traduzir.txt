@@ -1,2 +1,7 @@
-label.birulei: birulei
-label.birulei: birulei
+label.birulei: birulei2.0
+label.birulei9999999: birulei9999999.0
+label.birulei2: birulei2.0
+label.birulei4: birulei65.0
+label.leite_quente: Leite quente
+label1.leite_morno: Leite morno
+label1.leite_frio: Leite frio

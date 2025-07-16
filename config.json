@@ -1,10 +1,17 @@
-[
-  {
-    "nome": "IVY",
-    "caminho": "C:/Users/rodor/Desktop/i18n"
-  },
-  {
-    "nome": "dfgdfgdf",
-    "caminho": "C:/Users/rodor/Documents/projects/Tradutor-JSON/dist"
-  }
-]
+{
+  "pastas": [
+    {
+      "nome": "IVY",
+      "caminho": "C:/Users/rodor/Desktop/i18n"
+    }
+  ],
+  "categorias_validas": [
+    "utils",
+    "tooltip",
+    "titulo",
+    "menu",
+    "mensagem",
+    "label",
+    "backend"
+  ]
+}

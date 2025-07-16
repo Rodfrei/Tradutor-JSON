@@ -2,7 +2,19 @@ import json
 import os
 import requests
 
-CATEGORIAS_VALIDAS = {"utils", "tooltip", "titulo", "menu", "mensagem", "label", "backend"}
+def carregar_categorias_validas():
+    caminho_config = os.path.join(os.getcwd(), "config.json")
+    if os.path.exists(caminho_config):
+        try:
+            with open(caminho_config, "r", encoding="utf-8") as f:
+                dados = json.load(f)
+                if isinstance(dados, dict):
+                    return set(dados.get("categorias_validas", []))
+        except Exception:
+            pass
+    return {"utils", "tooltip", "titulo", "menu", "mensagem", "label", "backend"}
+
+CATEGORIAS_VALIDAS = carregar_categorias_validas()
 
 def carregar_json(caminho):
     if os.path.exists(caminho):
@@ -36,7 +48,11 @@ def verificar_existencia(dados_json, niveis):
         ref = ref[nivel]
     return niveis[-1] in ref
 
-def inserir_traducao(textos, pasta_assets, usar_api, escrever_txt):
+def inserir_traducao(textos, pasta_assets, usar_api, escrever_txt, atualizar_existente=False, categorias_validas=None):
+
+    if categorias_validas is None:
+        categorias_validas = carregar_categorias_validas()
+
     caminho_pt = os.path.join(pasta_assets, "pt.json")
     caminho_en = os.path.join(pasta_assets, "en.json")
     caminho_es = os.path.join(pasta_assets, "es.json")
@@ -54,10 +70,10 @@ def inserir_traducao(textos, pasta_assets, usar_api, escrever_txt):
         chave_completa = chave_completa.strip()
         niveis = chave_completa.split(".")
 
-        if niveis[0] not in CATEGORIAS_VALIDAS:
+        if niveis[0] not in categorias_validas:
             return f"==> Chave '{niveis[0]}' inválida"
 
-        if verificar_existencia(pt_json, niveis):
+        if verificar_existencia(pt_json, niveis) and not atualizar_existente:
             return f"==> A chave '{chave_completa}' já existe no JSON. Verifique!"
 
     with open(caminho_txt, "a", encoding="utf-8") as f:
@@ -74,7 +90,8 @@ def inserir_traducao(textos, pasta_assets, usar_api, escrever_txt):
                     if nivel not in ref:
                         ref[nivel] = {}
                     ref = ref[nivel]
-                ref[niveis[-1]] = valor
+                if atualizar_existente or niveis[-1] not in ref:
+                    ref[niveis[-1]] = valor
 
             if usar_api:
                 traduzido_en = traduzir_texto(valor, "en")
@@ -90,7 +107,19 @@ def inserir_traducao(textos, pasta_assets, usar_api, escrever_txt):
             inserir_no_json(es_json, niveis, traduzido_es)
 
             if escrever_txt:
-                f.write(f"{chave_completa}: {valor}\n")
+                if os.path.exists(caminho_txt):
+                    with open(caminho_txt, "r", encoding="utf-8") as arquivo_txt:
+                        linhas_existentes = arquivo_txt.readlines()
+                else:
+                    linhas_existentes = []
+
+                chave_prefixo = f"{chave_completa}:"
+                linhas_filtradas = [linha for linha in linhas_existentes if not linha.startswith(chave_prefixo)]
+
+                linhas_filtradas.append(f"{chave_completa}: {valor}\n")
+
+                with open(caminho_txt, "w", encoding="utf-8") as f:
+                    f.writelines(linhas_filtradas)
 
     salvar_json(caminho_pt, pt_json)
     salvar_json(caminho_en, en_json)
