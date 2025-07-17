@@ -113,9 +113,9 @@ def inserir_traducao(
         else:
             niveis = chave_completa.split(".")
             if niveis[0] not in categorias_validas:
-                return f"==> Chave '{niveis[0]}' inválida"
+                return f"❌ Chave '{niveis[0]}' inválida. Categorias válidas: {', '.join(sorted(categorias_validas))}"
         if verificar_existencia(pt_json, niveis) and not atualizar_existente:
-            return f"==> A chave '{chave_completa}' já existe no JSON. Verifique!"
+            return f"⚠️ A chave '{chave_completa}' já existe no JSON. Marque 'Atualizar existentes' para sobrescrever."
 
     for texto in textos:
         texto = texto.strip()
@@ -162,4 +162,4 @@ def inserir_traducao(
     salvar_json(caminho_pt, pt_json)
     salvar_json(caminho_en, en_json)
     salvar_json(caminho_es, es_json)
-    return "Todas as traduções foram inseridas com sucesso!"
+    return "✅ Todas as traduções foram inseridas com sucesso!"
