@@ -7,6 +7,7 @@ from tradutor import inserir_traducao
 from PyQt6.QtGui import QPalette, QColor
 import json
 from manual_tab import ManualTab
+from unicode_tab import UnicodeTab
 
 
 def aplicar_tema_escuro(app):
@@ -68,6 +69,7 @@ class TradutorApp(QWidget):
         self.setLayout(layout)
         self.criar_aba_json()
         self.criar_aba_manual()
+        self.criar_aba_unicode()
         self.criar_aba_config()
         self.input_categorias.textChanged.connect(self.atualizar_placeholder_texto_entrada)
         self.atualizar_placeholder_texto_entrada()
@@ -129,10 +131,22 @@ class TradutorApp(QWidget):
         self.lista_widget = QListWidget()
         self.lista_widget.setFont(self.fonte)
         self.lista_widget.setFixedHeight(130)
-        self.carregar_caminhos_salvos()
-        label_config = QLabel("Pastas com arquivos pt.json, en.json, es.json:")
+        label_config = QLabel("Pastas com arquivos:")
         label_config.setFont(self.fonte)
         layout_config.addWidget(label_config)
+        
+        # Campo de pesquisa e botão
+        pesquisa_layout = QHBoxLayout()
+        self.input_pesquisa = QLineEdit()
+        self.input_pesquisa.setFont(self.fonte)
+        self.input_pesquisa.setPlaceholderText("Digite para filtrar as pastas...")
+        self.input_pesquisa.textChanged.connect(self.filtrar_lista_pastas)
+        pesquisa_layout.addWidget(self.input_pesquisa)
+        
+        btn_limpar_pesquisa = self.criar_botao("Limpar", self.limpar_pesquisa)
+        pesquisa_layout.addWidget(btn_limpar_pesquisa)
+        layout_config.addLayout(pesquisa_layout)
+        
         layout_config.addWidget(self.lista_widget)
         btn_adicionar = self.criar_botao("Adicionar", self.adicionar_pasta_config)
         btn_remover = self.criar_botao("Remover", self.remover_caminho)
@@ -147,6 +161,11 @@ class TradutorApp(QWidget):
         layout_config.addWidget(btn_guardar)
         layout_config.addStretch()
         self.tabs.addTab(aba_config, "CONFIG")
+        
+        # Carregar caminhos salvos após criar todos os widgets
+        self.carregar_caminhos_salvos()
+        # Garantir que o combo da aba JSON seja atualizado
+        self.atualizar_config()
 
     def criar_text_area(self, is_read_only):
         """Cria um campo de texto configurado."""
@@ -206,9 +225,15 @@ class TradutorApp(QWidget):
         self.tabs.addTab(self.manual_tab, "MANUAL")
         # Removido: self.atualizar_placeholder_chave_manual() daqui
 
+    def criar_aba_unicode(self):
+        """Cria a aba UNICODE e adiciona ao QTabWidget."""
+        self.unicode_tab = UnicodeTab()
+        self.tabs.addTab(self.unicode_tab, "UNICODE")
+
     def atualizar_aba_manual(self, index):
         # Atualiza combo de pastas se a aba MANUAL estiver selecionada
-        if self.tabs.tabText(index) == "MANUAL":
+        tab_text = self.tabs.tabText(index)
+        if tab_text == "MANUAL":
             self.manual_tab.atualizar_combo_pastas()
             self.atualizar_placeholder_chave_manual()  # Atualiza placeholder ao trocar de aba
 
@@ -328,6 +353,28 @@ class TradutorApp(QWidget):
             display_text = item['nome']
             self.combo_pastas.addItem(display_text, item['caminho'])
 
+    def filtrar_lista_pastas(self):
+        """Filtra a lista de pastas baseado no texto de pesquisa."""
+        # Verificar se o campo de pesquisa existe
+        if not hasattr(self, 'input_pesquisa'):
+            return
+            
+        termo_pesquisa = self.input_pesquisa.text().strip().lower()
+        self.lista_widget.clear()
+        
+        for item in self.lista_caminhos:
+            nome = item['nome'].lower()
+            caminho = item['caminho'].lower()
+            
+            # Mostra o item se o termo de pesquisa estiver no nome ou caminho
+            if termo_pesquisa == "" or termo_pesquisa in nome or termo_pesquisa in caminho:
+                self.lista_widget.addItem(f"{item['nome']}  →  {item['caminho']}")
+
+    def limpar_pesquisa(self):
+        """Limpa o campo de pesquisa e atualiza a lista de pastas."""
+        self.input_pesquisa.clear()
+        self.filtrar_lista_pastas()
+
     def adicionar_pasta_config(self):
         """Adiciona uma nova pasta à lista de configurações."""
         pasta = QFileDialog.getExistingDirectory(self, "Selecionar Pasta")
@@ -336,15 +383,26 @@ class TradutorApp(QWidget):
             if ok and nome:
                 novo = {"nome": nome, "caminho": pasta}
                 self.lista_caminhos.append(novo)
-                self.lista_widget.addItem(f"{nome}  →  {pasta}")
+                # Usar o filtro para atualizar a lista
+                self.filtrar_lista_pastas()
                 # Não atualiza o combo da aba MANUAL aqui - só após salvar
 
     def remover_caminho(self):
         """Remove a pasta selecionada da lista de configurações."""
         row = self.lista_widget.currentRow()
         if row >= 0:
-            self.lista_caminhos.pop(row)
-            self.lista_widget.takeItem(row)
+            item = self.lista_widget.item(row)
+            if item:
+                # Encontrar o item correto na lista filtrada
+                item_texto = item.text()
+                # Extrair o nome da pasta do texto (formato: "nome → caminho")
+                nome_pasta = item_texto.split("  →  ")[0]
+                
+                # Remover da lista original
+                self.lista_caminhos = [item for item in self.lista_caminhos if item['nome'] != nome_pasta]
+                
+                # Atualizar a lista filtrada
+                self.filtrar_lista_pastas()
         self.atualizar_config()
 
     def guardar_config(self):
@@ -376,8 +434,16 @@ class TradutorApp(QWidget):
                 self.lista_caminhos = dados.get("pastas", [])
                 categorias = dados.get("categorias_validas", [])
                 self.input_categorias.setText(", ".join(categorias))
-                for item in self.lista_caminhos:
-                    self.lista_widget.addItem(f"{item['nome']}  →  {item['caminho']}")
+                
+                # Carregar diretamente na lista se o campo de pesquisa ainda não existe
+                if hasattr(self, 'input_pesquisa'):
+                    self.filtrar_lista_pastas()
+                else:
+                    # Carregar diretamente na lista
+                    self.lista_widget.clear()
+                    for item in self.lista_caminhos:
+                        self.lista_widget.addItem(f"{item['nome']}  →  {item['caminho']}")
+                        
             except Exception as e:
                 self.lista_caminhos = []
                 self.input_categorias.setText("")
@@ -386,6 +452,14 @@ class TradutorApp(QWidget):
         else:
             self.lista_caminhos = []
             self.input_categorias.setText("utils, tooltip, titulo, menu, mensagem, label, backend")
+            
+            # Carregar diretamente na lista se o campo de pesquisa ainda não existe
+            if hasattr(self, 'input_pesquisa'):
+                self.filtrar_lista_pastas()
+            else:
+                # Carregar diretamente na lista
+                self.lista_widget.clear()
+                
         self.atualizar_config()
 
 

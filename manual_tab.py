@@ -64,7 +64,8 @@ A pasta deve estar configurada na aba CONFIG.
 • Clique em "Traduzir" para inserir/atualizar as traduções
 • Use "Limpar" para limpar todos os campos
 
-A chave deve existir no pt.json para ser traduzida.""")
+💡 NOVO: Se a chave não existir no pt.json mas o campo PT estiver preenchido, 
+a chave será criada automaticamente no pt.json.""")
         
         # Aplicar estilo dark mode ao tooltip
         help_label.setStyleSheet("""
@@ -227,10 +228,23 @@ A chave deve existir no pt.json para ser traduzida.""")
         # Suporte a chaves aninhadas
         keys = chave.split('.')
         existe_pt = get_nested(pt_json, keys) is not None
+        
+        # Verificar se a chave existe no pt.json
         if not existe_pt:
-            self.resultado_saida.setText("A chave não existe no pt.json.")
-            QTimer.singleShot(4000, lambda: self.resultado_saida.clear())
-            return
+            # Se a chave não existe e o campo PT está preenchido, criar a chave
+            if pt:
+                set_nested(pt_json, keys, pt)
+                salvar_json(caminho_pt, pt_json)
+                self.resultado_saida.setText("✅ Chave criada no pt.json e traduções adicionadas!")
+            else:
+                self.resultado_saida.setText("❌ A chave não existe no pt.json e o campo PT está vazio.")
+                QTimer.singleShot(4000, lambda: self.resultado_saida.clear())
+                return
+        else:
+            # Se a chave existe, apenas atualizar se o campo PT estiver preenchido
+            if pt:
+                set_nested(pt_json, keys, pt)
+                salvar_json(caminho_pt, pt_json)
 
         adicionado = False
         # EN
@@ -248,9 +262,12 @@ A chave deve existir no pt.json para ser traduzida.""")
 
         salvar_json(caminho_en, en_json)
         salvar_json(caminho_es, es_json)
-        self.resultado_saida.setText("Tradução adicionada ou atualizada com sucesso!")
+        
+        if not existe_pt and pt:
+            self.resultado_saida.setText("✅ Chave criada no pt.json e traduções adicionadas com sucesso!")
+        else:
+            self.resultado_saida.setText("✅ Tradução adicionada ou atualizada com sucesso!")
         QTimer.singleShot(4000, lambda: self.resultado_saida.clear())
-        # Removido: QTimer.singleShot(2000, self.limpar_campos)
 
     def limpar_campos(self):
         self.input_chave.clear()
