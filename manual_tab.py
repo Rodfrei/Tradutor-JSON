@@ -5,7 +5,7 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtCore import QTimer
 from tradutor import carregar_json, salvar_json
-from components import criar_botao, criar_label, criar_checkbox, criar_text_area, criar_combo_box
+from components import criar_botao, criar_label, criar_checkbox, criar_text_area, criar_combo_box, criar_line_edit, criar_help_label, criar_hbox_layout, limpar_widget_apos
 
 
 def get_nested(d, keys):
@@ -26,10 +26,10 @@ def set_nested(d, keys, value):
 
 
 class ManualTab(QWidget):
-    def __init__(self, pastas_callback):
+    def __init__(self, pastas_callback, input_categorias):
         super().__init__()
         self.pastas_callback = pastas_callback
-        self.fonte = None
+        self.input_categorias = input_categorias
         self.init_ui()
 
     def init_ui(self):
@@ -37,89 +37,58 @@ class ManualTab(QWidget):
         from PyQt6.QtWidgets import QSizePolicy, QSpacerItem
         layout = QVBoxLayout()
         self.fonte = QFont("Arial", 14)
-        combo_layout = QHBoxLayout()
         self.combo_pastas = criar_combo_box(fonte=self.fonte)
-        self.combo_pastas.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         self.atualizar_combo_pastas()
-        combo_layout.addWidget(self.combo_pastas)
-        help_label = criar_label("?", largura_fixa=None)
-        help_label.setFont(QFont("Arial", 12, QFont.Weight.Bold))
-        help_label.setStyleSheet("color: #42A2DA; cursor: pointer; padding: 5px;")
-        help_label.setToolTip("""Inserção Direta de Traduções
-• Digite a chave ou chave.subchave 
-• Preencha os campos PT, EN, ES conforme necessário
-• Marque os checkboxes dos idiomas obrigatórios
-• Clique em "Traduzir" para inserir/atualizar as traduções
-""")
-        help_label.setStyleSheet("""
-            QLabel {
-                color: #42A2DA; 
-                cursor: pointer; 
-                padding: 5px;
-            }
-            QToolTip {
-                background-color: #2A2A2A;
-                color: #FFFFFF;
-                border: 1px solid #555555;
-                padding: 8px;
-                font-size: 11px;
-                border-radius: 4px;
-            }
-        """)
-        combo_layout.addWidget(help_label)
-        layout.addLayout(combo_layout)
+        combo_layout = criar_hbox_layout([
+            self.combo_pastas,
+            criar_help_label("""Inserção Direta de Traduções\n• Digite a chave ou chave.subchave \n• Preencha os campos PT, EN, ES conforme necessário\n• Ao desmarcar um checkbox, a tradução não é adicionada\n• Clique em \"Traduzir\" para inserir/atualizar as traduções\n""")
+        ])
         label_width = 60
-        linha_chave = QHBoxLayout()
-        label_chave = criar_label("Chave:", fonte=self.fonte, largura_fixa=label_width)
-        linha_chave.addWidget(label_chave)
-        self.input_chave = QLineEdit()
-        self.input_chave.setFont(self.fonte)
-        self.input_chave.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
-        self.input_chave.setPlaceholderText("chave")
-        linha_chave.addWidget(self.input_chave)
-        layout.addLayout(linha_chave)
-        linha_pt = QHBoxLayout()
-        label_pt = criar_label("PT:", fonte=self.fonte, largura_fixa=label_width)
-        linha_pt.addWidget(label_pt)
-        self.input_pt = QLineEdit()
-        self.input_pt.setFont(self.fonte)
-        self.input_pt.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
-        linha_pt.addWidget(self.input_pt)
-        self.checkbox_pt = criar_checkbox(False, fonte=self.fonte)
-        self.checkbox_pt.setToolTip("Obrigatório PT")
-        linha_pt.addWidget(self.checkbox_pt)
-        layout.addLayout(linha_pt)
-        linha_en = QHBoxLayout()
-        label_en = criar_label("EN:", fonte=self.fonte, largura_fixa=label_width)
-        linha_en.addWidget(label_en)
-        self.input_en = QLineEdit()
-        self.input_en.setFont(self.fonte)
-        self.input_en.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
-        linha_en.addWidget(self.input_en)
-        self.checkbox_en = criar_checkbox(True, fonte=self.fonte)
-        self.checkbox_en.setToolTip("Obrigatório EN")
-        linha_en.addWidget(self.checkbox_en)
-        layout.addLayout(linha_en)
-        linha_es = QHBoxLayout()
-        label_es = criar_label("ES:", fonte=self.fonte, largura_fixa=label_width)
-        linha_es.addWidget(label_es)
-        self.input_es = QLineEdit()
-        self.input_es.setFont(self.fonte)
-        self.input_es.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
-        linha_es.addWidget(self.input_es)
-        self.checkbox_es = criar_checkbox(True, fonte=self.fonte)
-        self.checkbox_es.setToolTip("Obrigatório ES")
-        linha_es.addWidget(self.checkbox_es)
-        layout.addLayout(linha_es)
-        layout_botoes = QHBoxLayout()
+        linha_chave = criar_hbox_layout([
+            criar_label("Chave:", fonte=self.fonte, largura_fixa=label_width),
+            criar_line_edit(fonte=self.fonte, placeholder="chave", expanding=True)
+        ])
+        self.input_chave = linha_chave.itemAt(1).widget()
+        linha_pt = criar_hbox_layout([
+            criar_label("PT:", fonte=self.fonte, largura_fixa=label_width),
+            criar_line_edit(fonte=self.fonte, expanding=True)
+        ])
+        self.input_pt = linha_pt.itemAt(1).widget()
+        linha_en = criar_hbox_layout([
+            criar_label("EN:", fonte=self.fonte, largura_fixa=label_width),
+            criar_line_edit(fonte=self.fonte, expanding=True),
+            criar_checkbox(True, texto=" ", fonte=self.fonte)
+        ])
+        self.input_en = linha_en.itemAt(1).widget()
+        self.checkbox_en = linha_en.itemAt(2).widget()
+        linha_es = criar_hbox_layout([
+            criar_label("ES:", fonte=self.fonte, largura_fixa=label_width),
+            criar_line_edit(fonte=self.fonte, expanding=True),
+            criar_checkbox(True, texto=" ", fonte=self.fonte)
+        ])
+        self.input_es = linha_es.itemAt(1).widget()
+        self.checkbox_es = linha_es.itemAt(2).widget()
         self.btn_adicionar = criar_botao("Traduzir", self.adicionar_traducao, fonte=self.fonte, altura_minima=32)
-        layout_botoes.addWidget(self.btn_adicionar)
         self.btn_limpar = criar_botao("Limpar", self.limpar_campos, fonte=self.fonte, altura_minima=32)
-        layout_botoes.addWidget(self.btn_limpar)
-        layout.addLayout(layout_botoes)
-        self.resultado_saida = criar_text_area(is_read_only=True, fonte=self.fonte, altura_fixa=80)
-        layout.addWidget(self.resultado_saida)
-        layout.addStretch()
+        layout_botoes = criar_hbox_layout([
+            self.btn_adicionar,
+            self.btn_limpar
+        ])
+        self.resultado_saida = criar_text_area(is_read_only=True, fonte=self.fonte)
+        widgets = [
+            combo_layout,
+            linha_chave,
+            linha_pt,
+            linha_en,
+            linha_es,
+            layout_botoes,
+            self.resultado_saida
+        ]
+        for item in widgets:
+            if hasattr(item, 'addWidget') or hasattr(item, 'addLayout'):
+                layout.addLayout(item)
+            else:
+                layout.addWidget(item)
         self.setLayout(layout)
 
     def atualizar_combo_pastas(self):
@@ -135,30 +104,16 @@ class ManualTab(QWidget):
         pt = self.input_pt.text().strip()
         en = self.input_en.text().strip()
         es = self.input_es.text().strip()
+        # Validação de categorias válidas igual à aba JSON
+        categorias_validas = [cat.strip() for cat in self.input_categorias.text().strip().split(",") if cat.strip()]
+        if categorias_validas:
+            categoria_chave = chave.split('.')[0]
+            if categoria_chave not in categorias_validas:
+                limpar_widget_apos(self.resultado_saida, 4000, f"Chave '{categoria_chave}' inválida. Categorias válidas: {', '.join(sorted(categorias_validas))}")
+                return
         pasta_assets = self.combo_pastas.currentData()
-        obrig_pt = self.checkbox_pt.isChecked()
         obrig_en = self.checkbox_en.isChecked()
         obrig_es = self.checkbox_es.isChecked()
-        if not pasta_assets:
-            self.resultado_saida.setText("Selecione a pasta dos arquivos JSON.")
-            QTimer.singleShot(4000, lambda: self.resultado_saida.clear())
-            return
-        if not chave:
-            self.resultado_saida.setText("Campo chave obrigatório.")
-            QTimer.singleShot(4000, lambda: self.resultado_saida.clear())
-            return
-        if obrig_pt and not pt:
-            self.resultado_saida.setText("Campo PT obrigatório.")
-            QTimer.singleShot(4000, lambda: self.resultado_saida.clear())
-            return
-        if obrig_en and not en:
-            self.resultado_saida.setText("Campo EN obrigatório.")
-            QTimer.singleShot(4000, lambda: self.resultado_saida.clear())
-            return
-        if obrig_es and not es:
-            self.resultado_saida.setText("Campo ES obrigatório.")
-            QTimer.singleShot(4000, lambda: self.resultado_saida.clear())
-            return
         caminho_pt = os.path.join(pasta_assets, "pt.json")
         caminho_en = os.path.join(pasta_assets, "en.json")
         caminho_es = os.path.join(pasta_assets, "es.json")
@@ -167,14 +122,30 @@ class ManualTab(QWidget):
         es_json = carregar_json(caminho_es)
         keys = chave.split('.')
         existe_pt = get_nested(pt_json, keys) is not None
+                
+        if not pasta_assets:
+            limpar_widget_apos(self.resultado_saida, 4000, "Selecione a pasta dos arquivos JSON.")
+            return
+        if not chave:
+            limpar_widget_apos(self.resultado_saida, 4000, "Campo chave obrigatório.")
+            return
+        if not pt and not existe_pt:
+            limpar_widget_apos(self.resultado_saida, 4000, "Campo PT obrigatório.")
+            return
+        if obrig_en and not en:
+            limpar_widget_apos(self.resultado_saida, 4000, "Campo EN obrigatório.")
+            return
+        if obrig_es and not es:
+            limpar_widget_apos(self.resultado_saida, 4000, "Campo ES obrigatório.")
+            return
+
         if not existe_pt:
             if pt:
                 set_nested(pt_json, keys, pt)
                 salvar_json(caminho_pt, pt_json)
-                self.resultado_saida.setText("✅ Chave criada no pt.json e traduções adicionadas!")
+                self.resultado_saida.setText("Chave criada no pt.json e traduções adicionadas!")
             else:
-                self.resultado_saida.setText("❌ A chave não existe no pt.json e o campo PT está vazio.")
-                QTimer.singleShot(4000, lambda: self.resultado_saida.clear())
+                limpar_widget_apos(self.resultado_saida, 4000, "A chave não existe no pt.json e o campo PT está vazio.")
                 return
         else:
             if pt:
@@ -188,16 +159,14 @@ class ManualTab(QWidget):
             set_nested(es_json, keys, es)
             adicionado = True
         if not adicionado:
-            self.resultado_saida.setText("Nada a adicionar.")
-            QTimer.singleShot(4000, lambda: self.resultado_saida.clear())
+            limpar_widget_apos(self.resultado_saida, 4000, "Nada a adicionar.")
             return
         salvar_json(caminho_en, en_json)
         salvar_json(caminho_es, es_json)
         if not existe_pt and pt:
-            self.resultado_saida.setText("✅ Chave criada no pt.json e traduções adicionadas com sucesso!")
+            limpar_widget_apos(self.resultado_saida, 4000, "Chave criada no pt.json e traduções adicionadas com sucesso!" if not existe_pt and pt else "Tradução adicionada ou atualizada com sucesso!")
         else:
-            self.resultado_saida.setText("✅ Tradução adicionada ou atualizada com sucesso!")
-        QTimer.singleShot(4000, lambda: self.resultado_saida.clear())
+            limpar_widget_apos(self.resultado_saida, 4000, "Tradução adicionada ou atualizada com sucesso!")
 
     def limpar_campos(self):
         self.input_chave.clear()

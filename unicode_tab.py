@@ -37,14 +37,14 @@ class UnicodeTab(QWidget):
     def converter_para_unicode(self):
         texto_entrada = self.texto_entrada.toPlainText().strip()
         if not texto_entrada:
-            self.texto_saida.setText("⚠️ Digite algum texto para converter.")
+            self.texto_saida.setText("Digite algum texto para converter.")
             QTimer.singleShot(3000, lambda: self.texto_saida.clear())
             return
         try:
             texto_unicode = self._codificar_unicode(texto_entrada)
             self.texto_saida.setText(texto_unicode)
         except Exception as e:
-            self.texto_saida.setText(f"❌ Erro na conversão: {e}")
+            self.texto_saida.setText(f"Erro na conversão: {e}")
             QTimer.singleShot(3000, lambda: self.texto_saida.clear())
 
     def _codificar_unicode(self, texto):
