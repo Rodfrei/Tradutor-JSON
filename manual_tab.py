@@ -4,6 +4,7 @@ from PyQt6.QtWidgets import (
 )
 from tradutor import carregar_json, salvar_json
 from components import criar_botao, criar_label, criar_checkbox, criar_text_area, criar_combo_box, criar_line_edit, criar_help_label, criar_hbox_layout, limpar_widget_apos
+import json
 
 
 def get_nested(d, keys):
@@ -160,6 +161,17 @@ class ManualTab(QWidget):
         if not adicionado:
             limpar_widget_apos(self.resultado_saida, 4000, "Nada a adicionar.")
             return
+        salvar_json(caminho_en, en_json)
+        salvar_json(caminho_es, es_json)
+        # Ordenar os arquivos após salvar
+        def ordenar_dict(d):
+            if isinstance(d, dict):
+                return {k: ordenar_dict(v) for k, v in sorted(d.items())}
+            return d
+        pt_json = ordenar_dict(pt_json)
+        en_json = ordenar_dict(en_json)
+        es_json = ordenar_dict(es_json)
+        salvar_json(caminho_pt, pt_json)
         salvar_json(caminho_en, en_json)
         salvar_json(caminho_es, es_json)
         if not existe_pt and pt:

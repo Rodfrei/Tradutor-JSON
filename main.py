@@ -9,6 +9,7 @@ from unicode_tab import UnicodeTab
 from components import aplicar_tema_escuro
 from json_tab import JsonTab
 from config_tab import ConfigTab
+from utils_tab import UtilsTab
 
 
 class TradutorApp(QWidget):
@@ -23,15 +24,15 @@ class TradutorApp(QWidget):
         self.setLayout(layout)
         self.carregar_configuracoes()
         self.criar_aba_json()
-        self.criar_aba_config()
         self.criar_aba_manual()
+        self.criar_aba_config()
         self.criar_aba_unicode()
-
+        self.criar_aba_utils()
         self.tabs.currentChanged.connect(self.atualizar_aba_manual)
 
     def inicializar_janela(self):
         self.setWindowTitle("Tradutor JSON")
-        self.setGeometry(100, 100, 700, 500)
+        self.setGeometry(0, 0, 960, 500)
         icon_path = os.path.join(os.path.dirname(__file__), "rocket.ico")
         self.setWindowIcon(QIcon(icon_path))
 
@@ -61,6 +62,10 @@ class TradutorApp(QWidget):
     def criar_aba_unicode(self):
         self.unicode_tab = UnicodeTab()
         self.tabs.addTab(self.unicode_tab, "UNICODE")
+
+    def criar_aba_utils(self):
+        self.utils_tab = UtilsTab()
+        self.tabs.addTab(self.utils_tab, "UTILS")
 
     def atualizar_aba_manual(self, index):
         tab_text = self.tabs.tabText(index)

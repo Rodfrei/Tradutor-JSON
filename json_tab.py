@@ -1,8 +1,31 @@
 import os
 import json
 from PyQt6.QtWidgets import QWidget, QVBoxLayout
+from PyQt6.QtCore import QThread, pyqtSignal
 from components import criar_combo_box, criar_text_area, criar_botao, criar_checkbox, criar_hbox_layout, limpar_widget_apos
 from tradutor import inserir_traducao
+
+class TraducaoThread(QThread):
+    resultado_signal = pyqtSignal(str)
+    def __init__(self, entradas, pasta_assets, usar_api, escrever_txt, atualizar_existente, categorias_validas):
+        super().__init__()
+        self.entradas = entradas
+        self.pasta_assets = pasta_assets
+        self.usar_api = usar_api
+        self.escrever_txt = escrever_txt
+        self.atualizar_existente = atualizar_existente
+        self.categorias_validas = categorias_validas
+    def run(self):
+        from tradutor import inserir_traducao
+        resultado = inserir_traducao(
+            self.entradas,
+            self.pasta_assets,
+            self.usar_api,
+            self.escrever_txt,
+            self.atualizar_existente,
+            categorias_validas=self.categorias_validas
+        )
+        self.resultado_signal.emit(resultado)
 
 class JsonTab(QWidget):
     def __init__(self, lista_caminhos, categorias_validas=None):
@@ -56,16 +79,17 @@ class JsonTab(QWidget):
         if not entradas:
             self._msg("Nenhum texto para processar. Digite algo no campo de entrada.")
             return
-        # Chamar a função de tradução real (validações feitas lá)
-        resultado = inserir_traducao(
+        self.resultado_saida.setText("Processando traduções...")
+        self.thread_traducao = TraducaoThread(
             entradas,
             pasta_assets,
             self.checkbox_api.isChecked(),
             self.checkbox_txt.isChecked(),
             self.checkbox_atualizar.isChecked(),
-            categorias_validas=self.categorias_validas
+            self.categorias_validas
         )
-        self._msg(resultado)
+        self.thread_traducao.resultado_signal.connect(self._msg)
+        self.thread_traducao.start()
 
     def ordenar_jsons(self):
         pasta_assets = self.combo_pastas.currentData()
@@ -100,5 +124,4 @@ class JsonTab(QWidget):
         self._msg(resultado)
 
     def _msg(self, texto):
-        self.resultado_saida.setText(texto)
-        limpar_widget_apos(self.resultado_saida, 4000) 
+        limpar_widget_apos(self.resultado_saida, 4000, texto) 

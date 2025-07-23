@@ -1,6 +1,6 @@
-from PyQt6.QtWidgets import QPushButton, QLabel, QTextEdit, QCheckBox, QComboBox, QListWidget, QLineEdit, QHBoxLayout
-from PyQt6.QtGui import QFont, QPalette, QColor
-from PyQt6.QtCore import QTimer
+from PyQt6.QtWidgets import QPushButton, QLabel, QTextEdit, QCheckBox, QComboBox, QListWidget, QLineEdit, QHBoxLayout, QSizePolicy, QDateEdit
+from PyQt6.QtGui import QFont, QPalette, QColor, QIntValidator
+from PyQt6.QtCore import QTimer, QDate
 
 FONTE_PADRAO = QFont("Arial", 14)
 
@@ -95,6 +95,30 @@ def criar_line_edit(placeholder=None, expanding=True):
         from PyQt6.QtWidgets import QSizePolicy
         line_edit.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
     return line_edit
+
+
+def criar_input_numero(placeholder=None, expanding=True):
+    line_edit = QLineEdit()
+    line_edit.setFont(FONTE_PADRAO)
+    line_edit.setValidator(QIntValidator())
+    if placeholder:
+        line_edit.setPlaceholderText(placeholder)
+    if expanding:
+        from PyQt6.QtWidgets import QSizePolicy
+        line_edit.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+    return line_edit
+
+
+def criar_date_edit(data_inicial=None):
+    date_edit = QDateEdit()
+    date_edit.setFont(FONTE_PADRAO)
+    date_edit.setCalendarPopup(True)
+    date_edit.setDisplayFormat("dd/MM/yyyy")
+    if data_inicial:
+        date_edit.setDate(data_inicial)
+    else:
+        date_edit.setDate(QDate.currentDate())
+    return date_edit
 
 
 def criar_help_label(tooltip_text, texto_label="?"):
