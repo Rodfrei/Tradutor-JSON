@@ -2,6 +2,8 @@ from PyQt6.QtWidgets import QPushButton, QLabel, QTextEdit, QCheckBox, QComboBox
 from PyQt6.QtGui import QFont, QPalette, QColor
 from PyQt6.QtCore import QTimer
 
+FONTE_PADRAO = QFont("Arial", 14)
+
 
 def aplicar_tema_escuro(app):
     app.setStyle("Fusion")
@@ -22,10 +24,9 @@ def aplicar_tema_escuro(app):
     app.setPalette(palette)
 
 
-def criar_botao(texto, funcao=None, fonte=None, altura_minima=None):
+def criar_botao(texto, funcao=None, altura_minima=None):
     botao = QPushButton(texto)
-    if fonte:
-        botao.setFont(fonte)
+    botao.setFont(FONTE_PADRAO)
     if funcao:
         botao.clicked.connect(funcao)
     if altura_minima:
@@ -34,19 +35,18 @@ def criar_botao(texto, funcao=None, fonte=None, altura_minima=None):
 
 
 def criar_label(texto, fonte=None, largura_fixa=None):
+    from PyQt6.QtWidgets import QLabel
     label = QLabel(texto)
-    if fonte:
-        label.setFont(fonte)
+    label.setFont(fonte or FONTE_PADRAO)
     if largura_fixa:
         label.setFixedWidth(largura_fixa)
     return label
 
 
-def criar_text_area(is_read_only=False, fonte=None, placeholder=None, altura_minima=None, altura_fixa=None):
+def criar_text_area(is_read_only=False, placeholder=None, altura_minima=None, altura_fixa=None):
     from PyQt6.QtWidgets import QSizePolicy
     text_area = QTextEdit()
-    if fonte:
-        text_area.setFont(fonte)
+    text_area.setFont(FONTE_PADRAO)
     text_area.setReadOnly(is_read_only)
     text_area.setAcceptRichText(False)
     if placeholder:
@@ -60,38 +60,35 @@ def criar_text_area(is_read_only=False, fonte=None, placeholder=None, altura_min
     return text_area
 
 
-def criar_checkbox(estado=False, texto="", fonte=None, tooltip=None):
+def criar_checkbox(estado=False, texto="", tooltip=None):
     checkbox = QCheckBox(texto)
-    if fonte:
-        checkbox.setFont(fonte)
+    checkbox.setFont(FONTE_PADRAO)
     checkbox.setChecked(estado)
     if tooltip:
         checkbox.setToolTip(tooltip)
     return checkbox
 
 
-def criar_combo_box(fonte=None):
+def criar_combo_box(altura_minima=30):
     combo = QComboBox()
-    if fonte:
-        combo.setFont(fonte)
+    combo.setFont(FONTE_PADRAO)
     from PyQt6.QtWidgets import QSizePolicy
     combo.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+    combo.setMinimumHeight(altura_minima)
     return combo
 
 
-def criar_lista_widget(fonte=None, altura_fixa=None):
+def criar_lista_widget(altura_fixa=None):
     lista = QListWidget()
-    if fonte:
-        lista.setFont(fonte)
+    lista.setFont(FONTE_PADRAO)
     if altura_fixa:
         lista.setFixedHeight(altura_fixa)
     return lista
 
 
-def criar_line_edit(fonte=None, placeholder=None, expanding=True):
+def criar_line_edit(placeholder=None, expanding=True):
     line_edit = QLineEdit()
-    if fonte:
-        line_edit.setFont(fonte)
+    line_edit.setFont(FONTE_PADRAO)
     if placeholder:
         line_edit.setPlaceholderText(placeholder)
     if expanding:

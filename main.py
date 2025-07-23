@@ -1,37 +1,14 @@
-from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QLabel, QPushButton, QTextEdit, QFileDialog, QLineEdit, \
-    QCheckBox, QHBoxLayout, QListWidget, QTabWidget, QInputDialog, QComboBox, QSizePolicy
+from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QFileDialog, QTabWidget
 from PyQt6.QtGui import QFont, QIcon
-from PyQt6.QtCore import QThread, pyqtSignal, QTimer
+from PyQt6.QtCore import QThread, pyqtSignal
 import os
 from tradutor import inserir_traducao
-from PyQt6.QtGui import QPalette, QColor
 import json
 from manual_tab import ManualTab
 from unicode_tab import UnicodeTab
-from components import criar_lista_widget, criar_combo_box, criar_text_area, criar_label, criar_botao, criar_checkbox, aplicar_tema_escuro, criar_line_edit, criar_hbox_layout, limpar_widget_apos
-
-
-class TraducaoThread(QThread):
-    resultado_signal = pyqtSignal(str)
-
-    def __init__(self, entradas, pasta_assets, usar_api, escrever_txt, atualizar_existente):
-        super().__init__()
-        self.entradas = entradas
-        self.pasta_assets = pasta_assets
-        self.usar_api = usar_api
-        self.escrever_txt = escrever_txt
-        self.atualizar_existente = atualizar_existente
-
-    def run(self):
-        resultado = inserir_traducao(
-            self.entradas,
-            self.pasta_assets,
-            self.usar_api,
-            self.escrever_txt,
-            self.atualizar_existente,
-            categorias_validas=None
-        )
-        self.resultado_signal.emit(resultado)
+from components import aplicar_tema_escuro
+from json_tab import JsonTab
+from config_tab import ConfigTab
 
 
 class TradutorApp(QWidget):
@@ -44,100 +21,28 @@ class TradutorApp(QWidget):
         layout = QVBoxLayout()
         layout.addWidget(self.tabs)
         self.setLayout(layout)
+        self.carregar_configuracoes()
         self.criar_aba_json()
         self.criar_aba_config()
         self.criar_aba_manual()
         self.criar_aba_unicode()
-        self.input_categorias.textChanged.connect(self.atualizar_placeholder_texto_entrada)
-        self.atualizar_placeholder_texto_entrada()
+
         self.tabs.currentChanged.connect(self.atualizar_aba_manual)
-        self.input_categorias.textChanged.connect(self.atualizar_placeholder_chave_manual)
-        self.atualizar_placeholder_chave_manual()
 
     def inicializar_janela(self):
         self.setWindowTitle("Tradutor JSON")
         self.setGeometry(100, 100, 700, 500)
         icon_path = os.path.join(os.path.dirname(__file__), "rocket.ico")
         self.setWindowIcon(QIcon(icon_path))
-        self.fonte = QFont("Arial", 14)
 
     def criar_aba_json(self):
-        aba_json = QWidget()
-        layout_json = QVBoxLayout()
-        aba_json.setLayout(layout_json)
-        self.combo_pastas = criar_combo_box(fonte=self.fonte)
-        self.combo_pastas.setMinimumHeight(30)
-        self.texto_entrada = criar_text_area(is_read_only=False, fonte=self.fonte)
-        self.resultado_saida_json = criar_text_area(is_read_only=True, fonte=self.fonte)
-        self.resultado_saida_json.setReadOnly(True)
-        self.btn_processar = criar_botao("Processar", self.processar_traducoes, fonte=self.fonte)
-        self.btn_ordenar = criar_botao("Ordenar", self.ordenar_jsons, fonte=self.fonte)
-        layout_botoes = criar_hbox_layout([
-            self.btn_processar,
-            self.btn_ordenar
-        ])
-        self.checkbox_api = criar_checkbox(False, "Utilizar API", fonte=self.fonte)
-        self.checkbox_atualizar = criar_checkbox(False, "Atualizar existentes", fonte=self.fonte)
-        self.checkbox_txt = criar_checkbox(True, "Escrever em .txt", fonte=self.fonte)
-        widgets = [
-            self.combo_pastas, self.texto_entrada,
-            self.criar_layout_checkboxes(), layout_botoes, self.resultado_saida_json
-        ]
-        for widget in widgets:
-            if isinstance(widget, QHBoxLayout):
-                layout_json.addLayout(widget)
-            else:
-                layout_json.addWidget(widget)
-        self.tabs.addTab(aba_json, "JSON")
+        self.json_tab = JsonTab(self.lista_caminhos, self.categorias_validas or [])
+        self.tabs.addTab(self.json_tab, "JSON")
 
     def criar_aba_config(self):
-        aba_config = QWidget()
-        layout_config = QVBoxLayout()
-        aba_config.setLayout(layout_config)
-        self.input_categorias = criar_line_edit(fonte=self.fonte, expanding=True)
-        self.lista_widget = criar_lista_widget(fonte=self.fonte, altura_fixa=130)
-        label_config = criar_label("Pastas com arquivos:", fonte=self.fonte)
-        pesquisa_layout = QHBoxLayout()
-        self.input_pesquisa = criar_line_edit(fonte=self.fonte, placeholder="Digite para filtrar as pastas...", expanding=True)
-        self.input_pesquisa.textChanged.connect(self.filtrar_lista_pastas)
-        pesquisa_layout.addWidget(self.input_pesquisa)
-        btn_limpar_pesquisa = criar_botao("Limpar", self.limpar_pesquisa, fonte=self.fonte)
-        pesquisa_layout.addWidget(btn_limpar_pesquisa)
-        btn_adicionar = criar_botao("Adicionar", self.adicionar_pasta_config, fonte=self.fonte)
-        btn_remover = criar_botao("Remover", self.remover_caminho, fonte=self.fonte)
-        btn_guardar = criar_botao("Guardar", self.guardar_config, fonte=self.fonte)
-        botoes_layout = QHBoxLayout()
-        botoes_layout.addWidget(btn_adicionar)
-        botoes_layout.addWidget(btn_remover)
-        self.resultado_saida_config = criar_text_area(is_read_only=True, fonte=self.fonte)
-        self.resultado_saida_config.setReadOnly(True)
-        widgets = [
-            label_config,
-            pesquisa_layout,
-            self.lista_widget,
-            botoes_layout,
-            criar_label("Chaves válidas:", fonte=self.fonte),
-            self.input_categorias,
-            btn_guardar,
-            self.resultado_saida_config
-        ]
-        for widget in widgets:
-            if isinstance(widget, QHBoxLayout) or isinstance(widget, QVBoxLayout):
-                layout_config.addLayout(widget)
-            else:
-                layout_config.addWidget(widget)
-        layout_config.addSpacing(10)
-        layout_config.addStretch()
-        self.tabs.addTab(aba_config, "CONFIG")
-        self.carregar_caminhos_salvos()
-        self.atualizar_config()
-
-    def criar_layout_checkboxes(self):
-        return criar_hbox_layout([
-            self.checkbox_api,
-            self.checkbox_atualizar,
-            self.checkbox_txt
-        ])
+        self.config_tab = ConfigTab(self.caminho_config)
+        self.config_tab.categorias_atualizadas.connect(self.atualizar_categorias_validas)
+        self.tabs.addTab(self.config_tab, "CONFIG")
 
     def criar_aba_manual(self):
         def obter_pastas():
@@ -150,7 +55,7 @@ class TradutorApp(QWidget):
                 except Exception:
                     return []
             return []
-        self.manual_tab = ManualTab(obter_pastas, self.input_categorias)
+        self.manual_tab = ManualTab(obter_pastas, self.lista_caminhos, self.categorias_validas or [])
         self.tabs.addTab(self.manual_tab, "MANUAL")
 
     def criar_aba_unicode(self):
@@ -161,189 +66,34 @@ class TradutorApp(QWidget):
         tab_text = self.tabs.tabText(index)
         if tab_text == "MANUAL":
             self.manual_tab.atualizar_combo_pastas()
-            self.atualizar_placeholder_chave_manual()
 
     def selecionar_pasta(self):
         QFileDialog.getExistingDirectory(self, "Selecionar Pasta")
         pass
 
-    def atualizar_placeholder_texto_entrada(self):
-        categorias = self.input_categorias.text().strip()
-        if categorias == "":
-            self.texto_entrada.setPlaceholderText("chave: valor")
-        else:
-            self.texto_entrada.setPlaceholderText("chave.subchave: valor")
-
-    def atualizar_placeholder_chave_manual(self):
-        categorias = self.input_categorias.text().strip()
-        if hasattr(self, 'manual_tab'):
-            if categorias == "":
-                self.manual_tab.input_chave.setPlaceholderText("chave")
-            else:
-                self.manual_tab.input_chave.setPlaceholderText("chave.subchave")
-
-    def processar_traducoes(self):
-        pasta_assets = self.combo_pastas.currentData()
-        if not pasta_assets:
-            self.resultado_saida_json.setText("Selecione uma pasta de arquivos JSON para continuar.")
-            limpar_widget_apos(self.resultado_saida_json, 4000)
-            return
-        usar_api = self.checkbox_api.isChecked()
-        escrever_txt = self.checkbox_txt.isChecked()
-        atualizar_existente = self.checkbox_atualizar.isChecked()
-        self.resultado_saida_json.setText("Processando traduções...")
-        entradas = self.texto_entrada.toPlainText().strip().split("\n")
-        entradas = [entrada.strip() for entrada in entradas if entrada.strip()]
-        if not entradas:
-            self.resultado_saida_json.setText("Nenhum texto para processar. Digite algo no campo de entrada.")
-            limpar_widget_apos(self.resultado_saida_json, 4000)
-            return
-        categorias_validas = [cat.strip() for cat in self.input_categorias.text().strip().split(",") if cat.strip()]
-        if not categorias_validas:
-            entradas_formatadas = []
-            for texto in entradas:
-                if ":" not in texto:
-                    self.resultado_saida_json.setText(f"Formato inválido: '{texto.strip()}' (formato esperado: chave: valor)")
-                    limpar_widget_apos(self.resultado_saida_json, 4000)
-                    return
-                chave, valor = texto.split(":", 1)
-                chave = chave.strip()
-                valor = valor.strip()
-                if not chave:
-                    self.resultado_saida_json.setText(f"Chave vazia na linha: '{texto.strip()}'")
-                    limpar_widget_apos(self.resultado_saida_json, 4000)
-                    return
-                entradas_formatadas.append(f"{chave}: {valor}")
-            self.thread_traducao = TraducaoThread(entradas_formatadas, pasta_assets, usar_api, escrever_txt, atualizar_existente)
-            self.thread_traducao.resultado_signal.connect(self.mostrar_resultado)
-            self.thread_traducao.start()
-        else:
-            self.thread_traducao = TraducaoThread(entradas, pasta_assets, usar_api, escrever_txt, atualizar_existente)
-            self.thread_traducao.resultado_signal.connect(self.mostrar_resultado)
-            self.thread_traducao.start()
-
-    def ordenar_jsons(self):
-        pasta_assets = self.combo_pastas.currentData()
-        if not pasta_assets:
-            self.resultado_saida_json.setText("Selecione uma pasta de arquivos JSON para continuar.")
-            limpar_widget_apos(self.resultado_saida_json, 4000)
-            return
-        self.resultado_saida_json.setText("Ordenando arquivos JSON...")
-        for lang in ["pt", "en", "es"]:
-            caminho = os.path.join(pasta_assets, f"{lang}.json")
-            if not os.path.exists(caminho):
-                continue
+    def carregar_configuracoes(self):
+        caminho_config = self.caminho_config
+        self.lista_caminhos = []
+        self.categorias_validas = []
+        if os.path.exists(caminho_config):
             try:
-                with open(caminho, "r", encoding="utf-8") as f:
-                    dados = json.load(f)
-            except Exception as e:
-                self.resultado_saida_json.setText(f"Erro ao ler {lang}.json: {e}")
-                limpar_widget_apos(self.resultado_saida_json, 4000)
-                continue
-            def ordenar_dict(d):
-                if isinstance(d, dict):
-                    return {k: ordenar_dict(v) for k, v in sorted(d.items())}
-                return d
-            dados_ordenados = ordenar_dict(dados)
-            try:
-                with open(caminho, "w", encoding="utf-8") as f:
-                    json.dump(dados_ordenados, f, indent=2, ensure_ascii=False)
-            except Exception as e:
-                self.resultado_saida_json.setText(f"Erro ao salvar {lang}.json: {e}")
-                limpar_widget_apos(self.resultado_saida_json, 4000)
-                continue
-        self.resultado_saida_json.setText("Arquivos JSON ordenados com sucesso!")
-        limpar_widget_apos(self.resultado_saida_json, 4000)
-
-    def mostrar_resultado(self, resultado):
-        self.resultado_saida_json.setText(resultado)
-        QTimer.singleShot(4000, lambda: self.resultado_saida_json.clear())
-
-    def atualizar_config(self):
-        self.combo_pastas.clear()
-        for item in self.lista_caminhos:
-            display_text = item['nome']
-            self.combo_pastas.addItem(display_text, item['caminho'])
-
-    def filtrar_lista_pastas(self):
-        if not hasattr(self, 'input_pesquisa'):
-            return
-        termo_pesquisa = self.input_pesquisa.text().strip().lower()
-        self.lista_widget.clear()
-        for item in self.lista_caminhos:
-            nome = item['nome'].lower()
-            caminho = item['caminho'].lower()
-            if termo_pesquisa == "" or termo_pesquisa in nome or termo_pesquisa in caminho:
-                self.lista_widget.addItem(f"{item['nome']}  →  {item['caminho']}")
-
-    def limpar_pesquisa(self):
-        self.input_pesquisa.clear()
-        self.filtrar_lista_pastas()
-
-    def adicionar_pasta_config(self):
-        pasta = QFileDialog.getExistingDirectory(self, "Selecionar Pasta")
-        if pasta and not any(item["caminho"] == pasta for item in self.lista_caminhos):
-            nome, ok = QInputDialog.getText(self, "Nome da Pasta", "Digite um nome para essa pasta:")
-            if ok and nome:
-                novo = {"nome": nome, "caminho": pasta}
-                self.lista_caminhos.append(novo)
-                self.filtrar_lista_pastas()
-
-    def remover_caminho(self):
-        row = self.lista_widget.currentRow()
-        if row >= 0:
-            item = self.lista_widget.item(row)
-            if item:
-                item_texto = item.text()
-                nome_pasta = item_texto.split("  →  ")[0]
-                self.lista_caminhos = [item for item in self.lista_caminhos if item['nome'] != nome_pasta]
-                self.filtrar_lista_pastas()
-        self.atualizar_config()
-
-    def guardar_config(self):
-        categorias_texto = self.input_categorias.text().strip()
-        categorias_lista = [cat.strip() for cat in categorias_texto.split(",") if cat.strip()]
-        dados = {
-            "pastas": self.lista_caminhos,
-            "categorias_validas": categorias_lista
-        }
-        try:
-            with open(self.caminho_config, "w", encoding="utf-8") as f:
-                json.dump(dados, f, indent=2, ensure_ascii=False)
-        except Exception as e:
-            limpar_widget_apos(self.resultado_saida_config, 4000, f"Erro ao salvar configuração: {e}")
-            return
-        self.atualizar_config()
-        if hasattr(self, 'manual_tab'):
-            self.manual_tab.atualizar_combo_pastas()
-        limpar_widget_apos(self.resultado_saida_config, 4000, "Configuração salva com sucesso!")
-
-    def carregar_caminhos_salvos(self):
-        if os.path.exists(self.caminho_config):
-            try:
-                with open(self.caminho_config, "r", encoding="utf-8") as f:
+                with open(caminho_config, "r", encoding="utf-8") as f:
                     dados = json.load(f)
                 self.lista_caminhos = dados.get("pastas", [])
-                categorias = dados.get("categorias_validas", [])
-                self.input_categorias.setText(", ".join(categorias))
-                if hasattr(self, 'input_pesquisa'):
-                    self.filtrar_lista_pastas()
-                else:
-                    self.lista_widget.clear()
-                    for item in self.lista_caminhos:
-                        self.lista_widget.addItem(f"{item['nome']}  →  {item['caminho']}")
-            except Exception as e:
+                self.categorias_validas = dados.get("categorias_validas", [])
+            except Exception:
                 self.lista_caminhos = []
-                self.input_categorias.setText("")
-                limpar_widget_apos(self.resultado_saida_config, 4000, f"Erro ao carregar configuração: {e}")
+                self.categorias_validas = []
         else:
             self.lista_caminhos = []
-            self.input_categorias.setText("utils, tooltip, titulo, menu, mensagem, label, backend")
-            if hasattr(self, 'input_pesquisa'):
-                self.filtrar_lista_pastas()
-            else:
-                self.lista_widget.clear()
-        self.atualizar_config()
+            self.categorias_validas = ["utils", "tooltip", "titulo", "menu", "mensagem", "label", "backend"]
+
+    def atualizar_categorias_validas(self, categorias):
+        categorias = categorias or []
+        if hasattr(self, 'json_tab'):
+            self.json_tab.set_categorias_validas(categorias)
+        if hasattr(self, 'manual_tab'):
+            self.manual_tab.set_categorias_validas(categorias)
 
 if __name__ == "__main__":
     app = QApplication([])

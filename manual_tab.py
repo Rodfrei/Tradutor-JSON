@@ -1,9 +1,7 @@
 import os
-import json
 from PyQt6.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QComboBox, QCheckBox, QTextEdit, QMessageBox
+    QWidget, QVBoxLayout
 )
-from PyQt6.QtCore import QTimer
 from tradutor import carregar_json, salvar_json
 from components import criar_botao, criar_label, criar_checkbox, criar_text_area, criar_combo_box, criar_line_edit, criar_help_label, criar_hbox_layout, limpar_widget_apos
 
@@ -26,18 +24,17 @@ def set_nested(d, keys, value):
 
 
 class ManualTab(QWidget):
-    def __init__(self, pastas_callback, input_categorias):
+    def __init__(self, pastas_callback, lista_caminhos, categorias_validas=None):
         super().__init__()
         self.pastas_callback = pastas_callback
-        self.input_categorias = input_categorias
+        self.lista_caminhos = lista_caminhos
+        self.categorias_validas = categorias_validas or []
         self.init_ui()
 
     def init_ui(self):
         from PyQt6.QtGui import QFont
-        from PyQt6.QtWidgets import QSizePolicy, QSpacerItem
         layout = QVBoxLayout()
-        self.fonte = QFont("Arial", 14)
-        self.combo_pastas = criar_combo_box(fonte=self.fonte)
+        self.combo_pastas = criar_combo_box()
         self.atualizar_combo_pastas()
         combo_layout = criar_hbox_layout([
             self.combo_pastas,
@@ -45,36 +42,36 @@ class ManualTab(QWidget):
         ])
         label_width = 60
         linha_chave = criar_hbox_layout([
-            criar_label("Chave:", fonte=self.fonte, largura_fixa=label_width),
-            criar_line_edit(fonte=self.fonte, placeholder="chave", expanding=True)
+            criar_label("Chave:", largura_fixa=label_width),
+            criar_line_edit(expanding=True)
         ])
         self.input_chave = linha_chave.itemAt(1).widget()
         linha_pt = criar_hbox_layout([
-            criar_label("PT:", fonte=self.fonte, largura_fixa=label_width),
-            criar_line_edit(fonte=self.fonte, expanding=True)
+            criar_label("PT:", largura_fixa=label_width),
+            criar_line_edit(expanding=True)
         ])
         self.input_pt = linha_pt.itemAt(1).widget()
         linha_en = criar_hbox_layout([
-            criar_label("EN:", fonte=self.fonte, largura_fixa=label_width),
-            criar_line_edit(fonte=self.fonte, expanding=True),
-            criar_checkbox(True, texto=" ", fonte=self.fonte)
+            criar_label("EN:", largura_fixa=label_width),
+            criar_line_edit(expanding=True),
+            criar_checkbox(True, texto=" ")
         ])
         self.input_en = linha_en.itemAt(1).widget()
         self.checkbox_en = linha_en.itemAt(2).widget()
         linha_es = criar_hbox_layout([
-            criar_label("ES:", fonte=self.fonte, largura_fixa=label_width),
-            criar_line_edit(fonte=self.fonte, expanding=True),
-            criar_checkbox(True, texto=" ", fonte=self.fonte)
+            criar_label("ES:", largura_fixa=label_width),
+            criar_line_edit(expanding=True),
+            criar_checkbox(True, texto=" ")
         ])
         self.input_es = linha_es.itemAt(1).widget()
         self.checkbox_es = linha_es.itemAt(2).widget()
-        self.btn_adicionar = criar_botao("Traduzir", self.adicionar_traducao, fonte=self.fonte, altura_minima=32)
-        self.btn_limpar = criar_botao("Limpar", self.limpar_campos, fonte=self.fonte, altura_minima=32)
+        self.btn_adicionar = criar_botao("Traduzir", self.adicionar_traducao, altura_minima=32)
+        self.btn_limpar = criar_botao("Limpar", self.limpar_campos, altura_minima=32)
         layout_botoes = criar_hbox_layout([
             self.btn_adicionar,
             self.btn_limpar
         ])
-        self.resultado_saida = criar_text_area(is_read_only=True, fonte=self.fonte)
+        self.resultado_saida = criar_text_area(is_read_only=True)
         widgets = [
             combo_layout,
             linha_chave,
@@ -99,17 +96,19 @@ class ManualTab(QWidget):
         for nome, caminho in pastas:
             self.combo_pastas.addItem(nome, caminho)
 
+    def set_categorias_validas(self, categorias):
+        self.categorias_validas = categorias or []
+
     def adicionar_traducao(self):
         chave = self.input_chave.text().strip()
         pt = self.input_pt.text().strip()
         en = self.input_en.text().strip()
         es = self.input_es.text().strip()
-        # Validação de categorias válidas igual à aba JSON
-        categorias_validas = [cat.strip() for cat in self.input_categorias.text().strip().split(",") if cat.strip()]
-        if categorias_validas:
+
+        if self.categorias_validas:
             categoria_chave = chave.split('.')[0]
-            if categoria_chave not in categorias_validas:
-                limpar_widget_apos(self.resultado_saida, 4000, f"Chave '{categoria_chave}' inválida. Categorias válidas: {', '.join(sorted(categorias_validas))}")
+            if categoria_chave not in self.categorias_validas:
+                limpar_widget_apos(self.resultado_saida, 4000, f"Chave '{categoria_chave}' inválida. Categorias válidas: {', '.join(sorted(self.categorias_validas))}")
                 return
         pasta_assets = self.combo_pastas.currentData()
         obrig_en = self.checkbox_en.isChecked()

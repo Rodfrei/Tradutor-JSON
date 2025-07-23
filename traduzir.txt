@@ -5,3 +5,8 @@ label.birulei4: birulei65.0
 label.leite_quente: Leite quente
 label1.leite_morno: Leite morno
 label1.leite_frio: Leite frio
+label.testeapi: teste
+label.testeapi1: teste
+label.testeapi1fgfd: teste
+label.testeapifgfd: teste
+label.texto_aptidao: Texto de aptidão
