@@ -111,7 +111,12 @@ class ManualTab(QWidget):
             if categoria_chave not in self.categorias_validas:
                 limpar_widget_apos(self.resultado_saida, 4000, f"Chave '{categoria_chave}' inválida. Categorias válidas: {', '.join(sorted(self.categorias_validas))}")
                 return
+
         pasta_assets = self.combo_pastas.currentData()
+        if not pasta_assets:
+            limpar_widget_apos(self.resultado_saida, 4000, "Selecione a pasta dos arquivos JSON.")
+            return
+
         obrig_en = self.checkbox_en.isChecked()
         obrig_es = self.checkbox_es.isChecked()
         caminho_pt = os.path.join(pasta_assets, "pt.json")
@@ -123,9 +128,6 @@ class ManualTab(QWidget):
         keys = chave.split('.')
         existe_pt = get_nested(pt_json, keys) is not None
                 
-        if not pasta_assets:
-            limpar_widget_apos(self.resultado_saida, 4000, "Selecione a pasta dos arquivos JSON.")
-            return
         if not chave:
             limpar_widget_apos(self.resultado_saida, 4000, "Campo chave obrigatório.")
             return
