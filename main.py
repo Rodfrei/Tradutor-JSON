@@ -8,6 +8,7 @@ from components import aplicar_tema_escuro
 from json_tab import JsonTab
 from config_tab import ConfigTab
 from utils_tab import UtilsTab
+from html_tab import HtmlTab
 
 
 class TradutorApp(QWidget):
@@ -26,6 +27,7 @@ class TradutorApp(QWidget):
         self.criar_aba_config()
         self.criar_aba_unicode()
         self.criar_aba_utils()
+        self.criar_aba_html()
         self.tabs.currentChanged.connect(self.atualizar_aba_manual)
 
     def inicializar_janela(self):
@@ -64,6 +66,10 @@ class TradutorApp(QWidget):
     def criar_aba_utils(self):
         self.utils_tab = UtilsTab()
         self.tabs.addTab(self.utils_tab, "UTILS")
+
+    def criar_aba_html(self):
+        self.html_tab = HtmlTab()
+        self.tabs.addTab(self.html_tab, "HTML")
 
     def atualizar_aba_manual(self, index):
         tab_text = self.tabs.tabText(index)
