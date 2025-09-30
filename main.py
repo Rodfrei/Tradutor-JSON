@@ -1,8 +1,6 @@
 from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QFileDialog, QTabWidget
-from PyQt6.QtGui import QFont, QIcon
-from PyQt6.QtCore import QThread, pyqtSignal
+from PyQt6.QtGui import QIcon
 import os
-from tradutor import inserir_traducao
 import json
 from manual_tab import ManualTab
 from unicode_tab import UnicodeTab
